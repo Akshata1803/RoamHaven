@@ -21,13 +21,13 @@
 - **AI Trip Planner**: Generates personalized 3-day itineraries for any listing using Google Gemini (with smart fallback)
 - **Natural Language**: Chatbot understands complex queries like "Show me places in Nashik under 5000"
 
-### � **Core Functionality**
+### ⚙️ **Core Functionality**
 - **Listing Management**: Create, edit, delete listings with Cloudinary image upload
 - **Secure Auth**: User registration & login with Passport.js encryption
 - **Booking System**: Complete booking flow from request to payment logic
 - **Reviews & Ratings**: Detailed 5-star rating system with breakdown metrics
 
-### �🗺️ **Location Services**
+### 🗺️ **Location Services**
 - **Geocoding**: Automatic coordinate generation for new listings
 - **Interactive Maps**: Dynamic maps on listing pages showing exact property location
 - **Location Search**: Find properties by city or region
