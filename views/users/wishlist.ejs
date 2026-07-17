@@ -1,0 +1,96 @@
+<% layout("/layouts/boilerplate") %>
+
+  <div class="container mt-4 mb-5">
+    <h2 class="fw-bold mb-4">My Wishlist</h2>
+
+    <% if (listings === null) { %>
+      <!-- Loader state while client-side script reads localStorage -->
+      <div id="wishlist-loader" class="text-center py-5">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <h5>Loading your wishlist...</h5>
+      </div>
+
+      <script>
+        (function() {
+          const wishlist = JSON.parse(localStorage.getItem('roamhaven_wishlist')) || [];
+          if (wishlist.length === 0) {
+            window.location.href = '/wishlist?ids=empty';
+          } else {
+            window.location.href = '/wishlist?ids=' + wishlist.join(',');
+          }
+        })();
+      </script>
+
+    <% } else if (listings.length === 0) { %>
+      <!-- Empty wishlist state -->
+      <div class="text-center py-5 my-5">
+        <div class="mb-4">
+          <i class="fa-regular fa-heart text-muted" style="font-size: 5rem; opacity: 0.3;"></i>
+        </div>
+        <h3 class="fw-bold">Create your first wishlist</h3>
+        <p class="text-muted">As you search, click the heart icon on your favorite places to save them here.</p>
+        <a href="/listings" class="btn btn-outline-dark px-4 py-2 mt-3" style="border-radius: 8px; font-weight: 500;">Start exploring</a>
+      </div>
+
+    <% } else { %>
+      <!-- Wishlist listings display -->
+      <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1 mt-3">
+        <% for (let listing of listings) { %>
+          <a href="/listings/<%= listing._id %>" class="listing-link">
+            <div class="card col listing-card">
+              <div class="card-img-container">
+                <img src="<%= listing.image.url %>" class="card-img-top" alt="listings_image" />
+                <div class="card-overlay-icons">
+                  <% if(listing.price > 5000) { %>
+                    <div class="guest-fav-badge">Guest favourite</div>
+                  <% } %>
+                  <button class="fav-heart-btn" data-id="<%= listing._id %>" onclick="event.preventDefault(); toggleWishlist(this);">
+                    <i class="fa-solid fa-heart fav-heart" style="color: #ff385c;"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="listing-header">
+                  <div class="listing-title">
+                    <%= listing.title %>
+                  </div>
+                  <div class="listing-rating">
+                    <i class="fa-solid fa-star"></i>
+                    <span class="rating-value">5.0</span>
+                  </div>
+                </div>
+                <div class="listing-subtitle">
+                  <%= listing.location %>, <%= listing.country %>
+                </div>
+                <div class="listing-price">
+                  <span class="price-amount">₹<%= listing.price.toLocaleString("en-IN") %></span>
+                  <span class="night-text">night</span>
+                </div>
+              </div>
+            </div>
+          </a>
+        <% } %>
+      </div>
+
+      <script>
+        function toggleWishlist(btn) {
+          const id = btn.getAttribute('data-id');
+          let wishlist = JSON.parse(localStorage.getItem('roamhaven_wishlist')) || [];
+          wishlist = wishlist.filter(item => item !== id);
+          localStorage.setItem('roamhaven_wishlist', JSON.stringify(wishlist));
+          
+          // Remove listing card from UI
+          const card = btn.closest('.listing-link');
+          card.style.transition = 'opacity 0.3s, transform 0.3s';
+          card.style.opacity = '0';
+          card.style.transform = 'scale(0.9)';
+          setTimeout(() => {
+            card.remove();
+            if (document.querySelectorAll('.listing-link').length === 0) {
+              window.location.reload();
+            }
+          }, 300);
+        }
+      </script>
+    <% } %>
+  </div>

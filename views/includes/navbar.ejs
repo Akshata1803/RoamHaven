@@ -1,0 +1,64 @@
+<nav class="navbar border-bottom sticky-top">
+  <div class="container-fluid d-flex align-items-center justify-content-between px-md-5 py-2">
+    <!-- Brand Logo and Name -->
+    <a class="navbar-brand m-0" href="/listings">
+      <div class="brand-container">
+        <img src="/images/logo.svg?v=4" alt="RoamHaven Logo" class="brand-logo">
+        <span class="brand-text d-none d-md-inline">RoamHaven</span>
+      </div>
+    </a>
+
+    <!-- Centered Search Pill -->
+    <div class="navbar-search-container">
+      <form action="/listings" method="GET" class="search-bar-pill shadow-sm">
+        <div class="search-inputs">
+          <div class="search-item flex-grow-1">
+            <span class="search-label">Where</span>
+            <input class="search-input" name="search" type="text" placeholder="Search destinations" value="<%= typeof search !== 'undefined' ? search : '' %>">
+          </div>
+        </div>
+        <button type="submit" class="search-icon-btn">
+          <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Side Actions & User Menu -->
+    <div class="d-flex align-items-center gap-3">
+      <a class="nav-link host-link d-none d-sm-inline" href="/listings/new">Your Home</a>
+      
+      <!-- Profile Dropdown Button -->
+      <div class="dropdown">
+        <button class="user-menu-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+          <i class="fa-solid fa-bars menu-bars"></i>
+          <% if(locals.currUser) { %>
+            <div class="user-avatar-initial">
+              <%= locals.currUser.username.charAt(0).toUpperCase() %>
+            </div>
+          <% } else { %>
+            <div class="user-avatar-placeholder">
+              <i class="fa-solid fa-circle-user"></i>
+            </div>
+          <% } %>
+        </button>
+        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-light">
+          <% if(!locals.currUser) { %>
+            <li><a class="dropdown-item fw-bold" href="/signup">Sign Up</a></li>
+            <li><a class="dropdown-item" href="/login">Log in</a></li>
+            <li><a class="dropdown-item" href="/wishlist">My Wishlist</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item d-block d-sm-none" href="/listings/new">Your Home</a></li>
+          <% } else { %>
+            <li><span class="dropdown-item-text text-muted small px-3 py-2 d-block">Hello, <%= locals.currUser.username %>!</span></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item fw-bold" href="/bookings">My Bookings</a></li>
+            <li><a class="dropdown-item" href="/wishlist">My Wishlist</a></li>
+            <li><a class="dropdown-item" href="/listings/new">Host your home</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="/logout">Log Out</a></li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </div>
+</nav>

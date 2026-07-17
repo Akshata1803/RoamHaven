@@ -1,0 +1,59 @@
+<% layout("/layouts/boilerplate") %>
+
+<div class="container my-5">
+  <h2 class="mb-4 fw-bold">My Booked Stays</h2>
+
+  <% if (bookings.length === 0) { %>
+    <div class="text-center py-5 shadow-sm rounded-4 bg-white border border-light">
+      <div class="mb-4">
+        <i class="fa-regular fa-calendar-xmark text-muted" style="font-size: 4rem;"></i>
+      </div>
+      <h4 class="fw-semibold">No bookings yet</h4>
+      <p class="text-muted">You haven't booked any accommodations yet. Start exploring your next dream stay!</p>
+      <a href="/listings" class="btn btn-danger mt-3 px-4 rounded-pill" style="background-color: #ff385c; border-color: #ff385c;">Explore Listings</a>
+    </div>
+  <% } else { %>
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      <% for (let booking of bookings) { %>
+        <% if (booking.listing) { %>
+          <div class="col">
+            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
+              <img src="<%= booking.listing.image.url %>" class="card-img-top" alt="<%= booking.listing.title %>" style="height: 200px; object-fit: cover;">
+              <div class="card-body d-flex flex-column justify-content-between">
+                <div>
+                  <h5 class="card-title fw-bold mb-1 text-truncate"><%= booking.listing.title %></h5>
+                  <p class="text-muted mb-3"><i class="fa-solid fa-location-dot"></i> <%= booking.listing.location %>, <%= booking.listing.country %></p>
+                  
+                  <div class="booking-details bg-light p-3 rounded-3 mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted small">Guest Name:</span>
+                      <span class="fw-semibold small"><%= booking.name %></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted small">Check-in:</span>
+                      <span class="fw-semibold small"><%= new Date(booking.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                      <span class="text-muted small">Check-out:</span>
+                      <span class="fw-semibold small"><%= new Date(booking.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
+                    </div>
+                    <% if (booking.mobile) { %>
+                      <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Mobile:</span>
+                        <span class="fw-semibold small"><%= booking.mobile %></span>
+                      </div>
+                    <% } %>
+                  </div>
+                </div>
+                
+                <div class="d-grid mt-2">
+                  <a href="/listings/<%= booking.listing._id %>" class="btn btn-outline-danger btn-sm rounded-pill py-2">View Listing</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        <% } %>
+      <% } %>
+    </div>
+  <% } %>
+</div>
