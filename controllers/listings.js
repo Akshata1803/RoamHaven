@@ -100,14 +100,31 @@ module.exports.renderEditForm = async (req, res) => {
     req.flash("error", " Listing you requested for does not exist!");
     return res.redirect("/listings");
   }
-  let originalImageUrl = listing.image.url;
-  originalImageUrl = originalImageUrl.replace("/upload", "/upload/h_300,w_250");
+  let originalImageUrl = listing.image && listing.image.url ? listing.image.url : "";
+  if (originalImageUrl && originalImageUrl.includes("/upload")) {
+    originalImageUrl = originalImageUrl.replace("/upload", "/upload/h_300,w_250");
+  }
   res.render("listings/edit.ejs", { listing, originalImageUrl });
 };
 
 module.exports.updateListing = async (req, res) => {
   let { id } = req.params;
   let listing = await Listing.findByIdAndUpdate(id, { ...req.body.listing });
+
+  if (req.body.listing && req.body.listing.location) {
+    try {
+      const geoData = await geocoder.geocode(req.body.listing.location);
+      if (geoData && geoData.length > 0) {
+        listing.geometry = {
+          type: "Point",
+          coordinates: [geoData[0].longitude, geoData[0].latitude]
+        };
+        await listing.save();
+      }
+    } catch (err) {
+      console.log("Geocoding update error:", err);
+    }
+  }
 
   if (typeof req.file !== "undefined") {
     let url = req.file.path;

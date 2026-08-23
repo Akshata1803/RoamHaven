@@ -10,7 +10,6 @@ const {
    isReviewAuthor } = require("../middleware");
 
 const reviewController = require("../controllers/reviews.js");
-const review = require("../models/review.js");
 
 // POST Review Route
 router.post(

@@ -322,6 +322,14 @@ app.post("/api/jarvis", async (req, res) => {
   }
 });
 
+app.get("/privacy", (req, res) => {
+  res.send("Privacy Policy Page - RoamHaven");
+});
+
+app.get("/terms", (req, res) => {
+  res.send("Terms and Conditions Page - RoamHaven");
+});
+
 app.all("/*splat", (req, res, next) => {
   next(new ExpressError(404, "Page Not Found"));
 });
