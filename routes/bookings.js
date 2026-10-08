@@ -10,4 +10,8 @@ router.get("/:id/book", isLoggedIn, wrapAsync(bookingController.renderBookingFor
 
 router.post("/", isLoggedIn, wrapAsync(bookingController.createBooking));
 
+router.post("/create-order", isLoggedIn, wrapAsync(bookingController.createOrder));
+
+router.post("/verify-payment", isLoggedIn, wrapAsync(bookingController.verifyPayment));
+
 module.exports = router;

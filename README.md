@@ -185,61 +185,60 @@ RoamHaven/
 
 ## 🔐 Security Features
 
-- ✅ **Environment Variables** - Sensitive data stored securely
-- ✅ **Password Hashing** - Using passport-local-mongoose
-- ✅ **Session Management** - Secure session handling with MongoDB store
-- ✅ **Input Validation** - Server-side validation with Joi
-- ✅ **CSRF Protection** - Method override for secure form submissions
-- ✅ **HTTP-only Cookies** - Protection against XSS attacks
+- ✅ **Helmet Security Headers** - HTTP headers hardened against MIME sniffing and clickjacking
+- ✅ **Rate Limiting** - Brute-force protection on `/login`, `/signup`, and DDoS mitigation on `/api/jarvis`
+- ✅ **Cryptographic Payment Verification** - HMAC-SHA256 signature validation for Razorpay webhooks/callbacks
+- ✅ **XSS Defense** - Safe DOM text node manipulation on client chat and inputs
+- ✅ **Password Hashing** - Secure PBKDF2 salting and hashing via passport-local-mongoose
+- ✅ **Session Management** - MongoDB backed session store with HTTP-only cookies
+- ✅ **Input Validation** - Joi schema validation for listings and reviews
 
 ---
 
 ## 🎯 API Endpoints
 
 ### **Listings**
-- `GET /listings` - View all listings
+- `GET /listings` - View all listings (with search & category filters)
 - `GET /listings/new` - Show create listing form
-- `POST /listings` - Create new listing
-- `GET /listings/:id` - View single listing
+- `POST /listings` - Create new listing (with Cloudinary & geocoding)
+- `GET /listings/:id` - View single listing with Leaflet map
 - `GET /listings/:id/edit` - Show edit form
 - `PUT /listings/:id` - Update listing
 - `DELETE /listings/:id` - Delete listing
 
-### **Reviews**
-- `POST /listings/:id/reviews` - Add review
-- `DELETE /listings/:id/reviews/:reviewId` - Delete review
+### **Bookings & Payments (Razorpay)**
+- `GET /bookings` - View authenticated user's confirmed stays
+- `GET /bookings/:id/book` - Show dynamic checkout summary
+- `POST /bookings/create-order` - Create Razorpay order & pending booking
+- `POST /bookings/verify-payment` - Cryptographic signature verification & status update
 
-### **Users**
-- `GET /signup` - Show signup form
-- `POST /signup` - Register new user
-- `GET /login` - Show login form
-- `POST /login` - Login user
+### **Wishlist & User**
+- `GET /wishlist` - View saved listings (database-backed for logged in users)
+- `POST /wishlist/toggle/:id` - Add or remove property from user wishlist in MongoDB
+- `GET /signup` / `POST /signup` - Register new user
+- `GET /login` / `POST /login` - Login user (rate-limited)
 - `GET /logout` - Logout user
 
-### **Bookings**
-- `GET /bookings` - View all bookings
-- `POST /bookings` - Create new booking
-
-### **AI Assistant**
-- `POST /api/jarvis` - Chat with AI assistant
+### **AI Assistant & Itinerary Planner**
+- `POST /api/jarvis` - Chat with RoamMate travel assistant (Gemini + rule-based fallback)
+- `POST /listings/:id/itinerary` - Generate custom 3-day Gemini itinerary
 
 ---
 
-## 🧪 Scripts
+## 🧪 Automated Testing
+
+RoamHaven features an automated integration and route protection test suite powered by **Jest** and **Supertest**:
 
 ```bash
-# Start production server
-npm start
-
-# Start development server with auto-reload
-npm run dev
-
-# Initialize database with sample data
-npm run init-db
-
-# Run tests (not configured yet)
+# Run all automated test suites
 npm test
 ```
+
+Test coverage includes:
+- ✅ Route redirects & error handling (404 and 500 pages)
+- ✅ Helmet HTTP security headers verification
+- ✅ Unauthenticated route guard tests (redirecting to `/login`)
+- ✅ AI RoamMate chatbot endpoint responses & fallbacks
 
 ---
 
@@ -247,14 +246,16 @@ npm test
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| express | ^5.1.0 | Web framework |
-| mongoose | ^8.19.2 | MongoDB ODM |
-| passport | ^0.7.0 | Authentication |
-| cloudinary | ^1.30.0 | Image management |
-| ejs | ^3.1.10 | Template engine |
-| joi | ^17.13.3 | Validation |
-| @google/generative-ai | ^0.24.1 | AI chatbot |
-| node-geocoder | ^4.4.1 | Geocoding |
+| express | ^5.1.0 | High-performance web framework |
+| mongoose | ^8.19.2 | MongoDB Object Data Modeling (ODM) |
+| razorpay | ^2.9.5 | Payment gateway integration |
+| helmet | ^8.0.0 | HTTP security headers hardening |
+| express-rate-limit | ^7.5.0 | Brute force & DDoS rate limiting |
+| passport | ^0.7.0 | Authentication & Session Management |
+| @google/generative-ai | ^0.24.1 | Google Gemini 1.5 Flash AI integration |
+| cloudinary | ^1.30.0 | Cloud media asset management |
+| jest & supertest | ^29.7.0 | Automated integration test suite |
+| leaflet | CDN | Interactive maps with OpenCage geocoding |
 
 ---
 

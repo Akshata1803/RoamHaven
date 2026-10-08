@@ -27,6 +27,7 @@ router
 router.get("/logout", userController.logout);
 
 router.get("/wishlist", wrapAsync(userController.wishlist));
+router.post("/wishlist/toggle/:id", wrapAsync(userController.toggleWishlist));
 
 router.get(
   "/auth/google",

@@ -62,23 +62,56 @@ module.exports.logout = (req, res, next) => {
 };
 
 module.exports.wishlist = async (req, res) => {
+  // If user is logged in, fetch wishlist directly from MongoDB
+  if (req.user) {
+    const user = await User.findById(req.user._id).populate("wishlist");
+    const listings = user && user.wishlist ? user.wishlist : [];
+    return res.render("users/wishlist.ejs", { listings, isDbWishlist: true });
+  }
+
+  // Fallback for guest users via localStorage query params
   const { ids } = req.query;
   if (!ids) {
-    // Render wishlist page to load wishlist IDs from localStorage client-side
-    return res.render("users/wishlist.ejs", { listings: null });
+    return res.render("users/wishlist.ejs", { listings: null, isDbWishlist: false });
   }
 
   if (ids === "empty") {
-    return res.render("users/wishlist.ejs", { listings: [] });
+    return res.render("users/wishlist.ejs", { listings: [], isDbWishlist: false });
   }
 
   try {
     const idsArray = ids.split(",");
     const Listing = require("../models/listing");
     const listings = await Listing.find({ _id: { $in: idsArray } });
-    res.render("users/wishlist.ejs", { listings });
+    res.render("users/wishlist.ejs", { listings, isDbWishlist: false });
   } catch (err) {
     req.flash("error", "Failed to load wishlist");
     res.redirect("/listings");
   }
+};
+
+module.exports.toggleWishlist = async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ success: false, message: "Please log in to save stays to your wishlist" });
+  }
+
+  const { id } = req.params;
+  const user = await User.findById(req.user._id);
+  if (!user.wishlist) {
+    user.wishlist = [];
+  }
+
+  const listingIndex = user.wishlist.indexOf(id);
+  let saved = false;
+
+  if (listingIndex > -1) {
+    user.wishlist.splice(listingIndex, 1);
+    saved = false;
+  } else {
+    user.wishlist.push(id);
+    saved = true;
+  }
+
+  await user.save();
+  res.json({ success: true, saved, message: saved ? "Added to wishlist" : "Removed from wishlist" });
 };

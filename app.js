@@ -19,24 +19,38 @@ const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const User = require("./models/user.js");
 const axios = require("axios");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 
 const listingRouter = require("./routes/listing.js");
 const reviewRouter = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
+const bookingRouter = require("./routes/bookings.js");
 
 // Use Atlas URL from environment when available, otherwise fall back to local MongoDB
 const dbUrl = process.env.ATLASDB_URL || "mongodb://127.0.0.1:27017/roamhaven";
 
-main()
-  .then(() => {
-    console.log("connected to DB");
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+if (process.env.NODE_ENV !== "test") {
+  main()
+    .then(() => {
+      console.log("connected to DB");
+    })
+    .catch((err) => {
+      console.log("DB Connection Error:", err.message);
+    });
+}
+
 async function main() {
   await mongoose.connect(dbUrl);
 }
+
+// Security headers with Helmet (CSP relaxed to allow CDN assets)
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
@@ -46,20 +60,8 @@ app.engine("ejs", ejsMate);
 app.use(express.static(path.join(__dirname, "public")));
 app.use(express.json());
 
-const store = MongoStore.create({
-  mongoUrl: dbUrl,
-  crypto: {
-    secret: process.env.SECRET || "roamhavensecretkey",
-  },
-  touchAfter: 24 * 3600,
-});
-
-store.on("error", (err) => {
-  console.log("Error in MONGO SESSION STORE", err);
-});
-
-const sessionOptions = {
-  store,
+// Session Store configuration
+let sessionOptions = {
   secret: process.env.SECRET || "roamhavensecretkey",
   resave: false,
   saveUninitialized: true,
@@ -69,13 +71,48 @@ const sessionOptions = {
   },
 };
 
-// Root route: redirect to listings index
-app.get("/", (req, res) => {
-  res.redirect("/listings");
+if (process.env.NODE_ENV !== "test") {
+  const store = MongoStore.create({
+    mongoUrl: dbUrl,
+    crypto: {
+      secret: process.env.SECRET || "roamhavensecretkey",
+    },
+    touchAfter: 24 * 3600,
+  });
+
+  store.on("error", (err) => {
+    console.log("Error in MONGO SESSION STORE", err);
+  });
+
+  sessionOptions.store = store;
+}
+
+app.use(session(sessionOptions)); // session setup
+app.use(flash()); // flash setup
+
+// Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 25,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: "Too many login/signup attempts. Please try again after 15 minutes."
 });
 
-passport.use(new LocalStrategy(User.authenticate()));
+const jarvisLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { reply: "Too many queries sent to RoamMate. Please take a quick break!" }
+});
 
+app.use("/login", authLimiter);
+app.use("/signup", authLimiter);
+app.use("/api/jarvis", jarvisLimiter);
+
+// Passport configuration
+passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
@@ -113,28 +150,31 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   console.log("⚠️ Google Client ID/Secret missing - Google OAuth Strategy not loaded");
 }
 
-console.log("🔑 Debug Session Options:", { ...sessionOptions, store: sessionOptions.store ? "MongoStore Instance" : "Missing" });
-app.use(session(sessionOptions)); // session setup
-app.use(flash()); // flash setup
-
-app.use(passport.initialize()); // passport init
+app.use(passport.initialize());
 app.use(passport.session());
 
+// Global template variables & Cache-Control
 app.use((req, res, next) => {
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
-  console.log(`🔍 [Session Debug] Path: ${req.path} | SessionID: ${req.sessionID} | User: ${req.user ? req.user.username : 'none'}`);
+  if (process.env.NODE_ENV !== "test") {
+    console.log(`🔍 [Session Debug] Path: ${req.path} | SessionID: ${req.sessionID} | User: ${req.user ? req.user.username : 'none'}`);
+  }
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   res.locals.currUser = req.user;
   next();
 });
 
-const bookingRouter = require("./routes/bookings.js");
+// Root route: redirect to listings index
+app.get("/", (req, res) => {
+  res.redirect("/listings");
+});
 
 app.use("/listings", listingRouter);
 app.use("/listings/:id/reviews", reviewRouter);
 app.use("/", userRouter);
 app.use("/bookings", bookingRouter);
+
 
 
 
@@ -344,6 +384,11 @@ app.use((err, req, res, next) => {
 
 
 
-app.listen(8080, () => {
-  console.log("server is listening to port 8080");
-});
+if (process.env.NODE_ENV !== "test") {
+  const PORT = process.env.PORT || 8080;
+  app.listen(PORT, () => {
+    console.log(`🚀 RoamHaven server is listening on port ${PORT}`);
+  });
+}
+
+module.exports = app;

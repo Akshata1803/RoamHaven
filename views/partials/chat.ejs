@@ -88,10 +88,10 @@
     const userText = jarvisInput.value.trim();
     if (!userText) return;
 
-    // Add User Message
+    // Add User Message (safely set textContent to prevent XSS)
     const userMsg = document.createElement("div");
     userMsg.className = "msg-bubble msg-user";
-    userMsg.innerHTML = userText;
+    userMsg.textContent = userText;
     jarvisChat.appendChild(userMsg);
 
     jarvisInput.value = "";

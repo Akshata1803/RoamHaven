@@ -72,12 +72,11 @@
             <!-- Payment Section -->
             <div class="booking-section">
               <h2 class="section-heading">Proceed to payment</h2>
-              <p class="section-subtext">You'll be directed to Razorpay to complete payment.</p>
-              <p class="payment-info">
-                <i class="fa-solid fa-circle-info text-primary"></i>
-                The host has 24 hours to accept your request. You'll pay now, but get a full refund if the booking isn't
-                confirmed.
-              </p>
+              <p class="section-subtext">Secure end-to-end payment powered by <b>Razorpay</b>.</p>
+              <div class="alert alert-info py-2 px-3 small border-0 d-flex align-items-center gap-2">
+                <i class="fa-solid fa-shield-halved"></i>
+                <span>100% Secure Checkout with 256-bit SSL encryption & Instant Confirmation.</span>
+              </div>
             </div>
 
             <hr class="section-divider">
@@ -85,11 +84,13 @@
             <!-- Terms -->
             <div class="booking-section">
               <p class="terms-text">
-                By selecting the button, I agree to the <a href="#" class="terms-link">booking terms</a>.
+                By selecting the button, I agree to the <a href="/terms" class="terms-link">booking terms</a> and cancellation policy.
               </p>
 
-              <button type="submit" class="btn btn-dark btn-lg w-100 continue-btn">
-                Continue to <i class="fa-brands fa-cc-stripe"></i> Razorpay
+              <button type="button" id="payBtn" class="btn btn-dark btn-lg w-100 continue-btn d-flex align-items-center justify-content-center gap-2">
+                <i class="fa-solid fa-lock"></i>
+                <span id="payBtnText">Confirm & Pay with Razorpay</span>
+                <span id="payBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
               </button>
             </div>
           </form>
@@ -101,13 +102,13 @@
             <div class="booking-summary-card">
               <!-- Listing Preview -->
               <div class="listing-preview">
-                <img src="<%= listing.image.url %>" alt="<%= listing.title %>" class="listing-thumbnail">
+                <img src="<%= (listing.image && listing.image.url) ? listing.image.url : 'https://images.unsplash.com/photo-1566073771259-6a8506099945' %>" alt="<%= listing.title %>" class="listing-thumbnail">
                 <div class="listing-info-mini">
                   <h3 class="listing-name">
                     <%= listing.title %>
                   </h3>
                   <p class="listing-rating">
-                    <i class="fa-solid fa-star"></i> 4.83 (40)
+                    <i class="fa-solid fa-star"></i> 4.9 (Top Rated)
                   </p>
                 </div>
               </div>
@@ -117,8 +118,7 @@
               <!-- Cancellation Policy -->
               <div class="policy-section">
                 <h4 class="policy-title">Free cancellation</h4>
-                <p class="policy-text">Cancel within 24 hours for a full refund. <a href="#" class="policy-link">Full
-                    policy</a></p>
+                <p class="policy-text">Cancel within 24 hours for a full refund. <a href="/terms" class="policy-link">Full policy</a></p>
               </div>
 
               <hr class="my-3">
@@ -131,16 +131,6 @@
                   <span class="date-separator">to</span>
                   <input type="date" name="endDate" form="bookingForm" class="form-control date-input" id="endDate" required>
                 </div>
-                <button type="button" class="change-btn">Change</button>
-              </div>
-
-              <hr class="my-3">
-
-              <!-- Guests -->
-              <div class="detail-row">
-                <h4 class="detail-label">Guests</h4>
-                <p class="detail-value">1 adult</p>
-                <button type="button" class="change-btn">Change</button>
               </div>
 
               <hr class="my-3">
@@ -149,12 +139,12 @@
               <div class="price-details">
                 <h4 class="price-title">Price details</h4>
                 <div class="price-row">
-                  <span class="price-label">2 nights x ₹<%= (listing.price / 2).toLocaleString("en-IN") %></span>
-                  <span class="price-value">₹<%= listing.price.toLocaleString("en-IN") %></span>
+                  <span class="price-label" id="priceLabel">2 nights x ₹<%= (listing.price || 0).toLocaleString("en-IN") %></span>
+                  <span class="price-value" id="basePriceVal">₹<%= ((listing.price || 0) * 2).toLocaleString("en-IN") %></span>
                 </div>
                 <div class="price-row">
-                  <span class="price-label">Taxes</span>
-                  <span class="price-value">₹<%= Math.round(listing.price * 0.05).toLocaleString("en-IN") %></span>
+                  <span class="price-label">Taxes & fees (5% GST)</span>
+                  <span class="price-value" id="taxVal">₹<%= Math.round((listing.price || 0) * 2 * 0.05).toLocaleString("en-IN") %></span>
                 </div>
               </div>
 
@@ -162,12 +152,9 @@
 
               <!-- Total -->
               <div class="total-row">
-                <span class="total-label">Total INR</span>
-                <span class="total-value">₹<%= (listing.price + Math.round(listing.price *
-                    0.05)).toLocaleString("en-IN") %></span>
+                <span class="total-label">Total Amount</span>
+                <span class="total-value fw-bold text-danger" id="totalPriceVal">₹<%= Math.round((listing.price || 0) * 2 * 1.05).toLocaleString("en-IN") %></span>
               </div>
-
-              <a href="#" class="price-breakdown-link">Price breakdown</a>
             </div>
           </div>
         </div>
@@ -175,32 +162,173 @@
     </div>
   </div>
 
+  <!-- Razorpay SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
   <script>
-    // Auto-calculate nights and update price
+    const pricePerNight = <%= listing.price || 0 %>;
+    const listingId = "<%= listing._id %>";
+    const listingTitle = "<%= listing.title %>";
+
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');
+    const priceLabel = document.getElementById('priceLabel');
+    const basePriceVal = document.getElementById('basePriceVal');
+    const taxVal = document.getElementById('taxVal');
+    const totalPriceVal = document.getElementById('totalPriceVal');
+    const payBtn = document.getElementById('payBtn');
+    const payBtnText = document.getElementById('payBtnText');
+    const payBtnSpinner = document.getElementById('payBtnSpinner');
+    const form = document.getElementById('bookingForm');
 
-    // Set default dates (2 days from now to 4 days from now)
+    // Default dates (2 to 4 days from now)
     const today = new Date();
-    const startDate = new Date(today);
-    startDate.setDate(today.getDate() + 2);
-    const endDate = new Date(today);
-    endDate.setDate(today.getDate() + 4);
+    const d1 = new Date(today);
+    d1.setDate(today.getDate() + 1);
+    const d2 = new Date(today);
+    d2.setDate(today.getDate() + 3);
 
-    startDateInput.value = startDate.toISOString().split('T')[0];
-    endDateInput.value = endDate.toISOString().split('T')[0];
-
-    // Set minimum dates
+    startDateInput.value = d1.toISOString().split('T')[0];
+    endDateInput.value = d2.toISOString().split('T')[0];
     startDateInput.min = new Date().toISOString().split('T')[0];
-    endDateInput.min = new Date().toISOString().split('T')[0];
+    endDateInput.min = d1.toISOString().split('T')[0];
 
-    // Update end date minimum when start date changes
-    startDateInput.addEventListener('change', function () {
-      endDateInput.min = this.value;
-      if (endDateInput.value < this.value) {
-        const newEnd = new Date(this.value);
-        newEnd.setDate(newEnd.getDate() + 1);
-        endDateInput.value = newEnd.toISOString().split('T')[0];
+    function calculateNights() {
+      const start = new Date(startDateInput.value);
+      const end = new Date(endDateInput.value);
+      const diff = end - start;
+      const nights = Math.max(1, Math.ceil(diff / (1000 * 3600 * 24)));
+      const base = nights * pricePerNight;
+      const tax = Math.round(base * 0.05);
+      const total = base + tax;
+
+      priceLabel.innerText = `${nights} night${nights > 1 ? 's' : ''} x ₹${pricePerNight.toLocaleString('en-IN')}`;
+      basePriceVal.innerText = `₹${base.toLocaleString('en-IN')}`;
+      taxVal.innerText = `₹${tax.toLocaleString('en-IN')}`;
+      totalPriceVal.innerText = `₹${total.toLocaleString('en-IN')}`;
+
+      return { nights, base, tax, total };
+    }
+
+    calculateNights();
+
+    startDateInput.addEventListener('change', () => {
+      endDateInput.min = startDateInput.value;
+      if (new Date(endDateInput.value) <= new Date(startDateInput.value)) {
+        const next = new Date(startDateInput.value);
+        next.setDate(next.getDate() + 1);
+        endDateInput.value = next.toISOString().split('T')[0];
+      }
+      calculateNights();
+    });
+
+    endDateInput.addEventListener('change', calculateNights);
+
+    payBtn.addEventListener('click', async () => {
+      // Validate HTML inputs
+      if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
+      }
+
+      const name = form.querySelector('input[name="name"]').value;
+      const mobile = form.querySelector('input[name="mobile"]').value;
+      const email = form.querySelector('input[name="email"]').value;
+      const startDate = startDateInput.value;
+      const endDate = endDateInput.value;
+
+      payBtn.disabled = true;
+      payBtnSpinner.classList.remove('d-none');
+      payBtnText.innerText = 'Creating Secure Order...';
+
+      try {
+        const orderRes = await fetch('/bookings/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listingId, name, mobile, email, startDate, endDate })
+        });
+
+        const orderData = await orderRes.json();
+        if (!orderData.success) {
+          alert(orderData.message || 'Unable to initiate order');
+          resetBtn();
+          return;
+        }
+
+        // If in test sandbox/mock mode or real key placeholder
+        if (orderData.isTestSimulated) {
+          payBtnText.innerText = 'Processing Test Payment...';
+          setTimeout(async () => {
+            const verifyRes = await fetch('/bookings/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId: orderData.bookingId,
+                razorpay_order_id: orderData.orderId,
+                simulated: true
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              window.location.href = verifyData.redirectUrl;
+            } else {
+              alert('Payment simulation failed');
+              resetBtn();
+            }
+          }, 1000);
+          return;
+        }
+
+        // Razorpay Live/Test Modal
+        const options = {
+          key: orderData.key,
+          amount: orderData.amount,
+          currency: orderData.currency,
+          name: "RoamHaven",
+          description: `Booking for ${orderData.listingTitle}`,
+          order_id: orderData.orderId,
+          prefill: { name, email, contact: mobile },
+          theme: { color: "#ff385c" },
+          handler: async function (response) {
+            payBtnText.innerText = 'Verifying Payment Signature...';
+            const verifyRes = await fetch('/bookings/verify-payment', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                bookingId: orderData.bookingId,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              window.location.href = verifyData.redirectUrl;
+            } else {
+              alert(verifyData.message || 'Payment verification failed');
+              resetBtn();
+            }
+          },
+          modal: {
+            ondismiss: function () {
+              resetBtn();
+            }
+          }
+        };
+
+        const rzp = new Razorpay(options);
+        rzp.open();
+      } catch (err) {
+        console.error(err);
+        alert('An error occurred during payment initiation.');
+        resetBtn();
       }
     });
+
+    function resetBtn() {
+      payBtn.disabled = false;
+      payBtnSpinner.classList.add('d-none');
+      payBtnText.innerText = 'Confirm & Pay with Razorpay';
+    }
   </script>

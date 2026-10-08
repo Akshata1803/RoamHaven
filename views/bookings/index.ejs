@@ -17,8 +17,14 @@
       <% for (let booking of bookings) { %>
         <% if (booking.listing) { %>
           <div class="col">
-            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden">
-              <img src="<%= (booking.listing.image && booking.listing.image.url) ? booking.listing.image.url : 'https://images.unsplash.com/photo-1566073771259-6a8506099945' %>" class="card-img-top" alt="<%= booking.listing.title %>" style="height: 200px; object-fit: cover;">
+            <div class="card h-100 shadow-sm border-0 rounded-4 overflow-hidden position-relative">
+              <div class="position-relative">
+                <img src="<%= (booking.listing.image && booking.listing.image.url) ? booking.listing.image.url : 'https://images.unsplash.com/photo-1566073771259-6a8506099945' %>" class="card-img-top" alt="<%= booking.listing.title %>" style="height: 200px; object-fit: cover;">
+                <span class="badge position-absolute top-0 end-0 m-3 px-3 py-2 rounded-pill shadow-sm <%= booking.paymentStatus === 'paid' ? 'bg-success text-white' : 'bg-warning text-dark' %>">
+                  <i class="fa-solid <%= booking.paymentStatus === 'paid' ? 'fa-circle-check' : 'fa-clock' %> me-1"></i>
+                  <%= booking.paymentStatus === 'paid' ? 'Confirmed & Paid' : 'Pending Payment' %>
+                </span>
+              </div>
               <div class="card-body d-flex flex-column justify-content-between">
                 <div>
                   <h5 class="card-title fw-bold mb-1 text-truncate"><%= booking.listing.title %></h5>
@@ -37,10 +43,16 @@
                       <span class="text-muted small">Check-out:</span>
                       <span class="fw-semibold small"><%= new Date(booking.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %></span>
                     </div>
-                    <% if (booking.mobile) { %>
-                      <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted small">Mobile:</span>
-                        <span class="fw-semibold small"><%= booking.mobile %></span>
+                    <% if (booking.totalPrice) { %>
+                      <div class="d-flex justify-content-between mb-2 border-top pt-2">
+                        <span class="text-muted small">Total Paid:</span>
+                        <span class="fw-bold text-success small">₹<%= booking.totalPrice.toLocaleString('en-IN') %></span>
+                      </div>
+                    <% } %>
+                    <% if (booking.razorpayPaymentId) { %>
+                      <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Payment ID:</span>
+                        <span class="text-muted small font-monospace"><%= booking.razorpayPaymentId.slice(0, 14) %>...</span>
                       </div>
                     <% } %>
                   </div>

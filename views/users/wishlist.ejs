@@ -73,23 +73,33 @@
       </div>
 
       <script>
-        function toggleWishlist(btn) {
+        async function toggleWishlist(btn) {
           const id = btn.getAttribute('data-id');
           let wishlist = JSON.parse(localStorage.getItem('roamhaven_wishlist')) || [];
           wishlist = wishlist.filter(item => item !== id);
           localStorage.setItem('roamhaven_wishlist', JSON.stringify(wishlist));
+
+          <% if (locals.currUser) { %>
+            try {
+              await fetch(`/wishlist/toggle/${id}`, { method: 'POST' });
+            } catch (e) {
+              console.error('Failed to sync wishlist with DB', e);
+            }
+          <% } %>
           
           // Remove listing card from UI
           const card = btn.closest('.listing-link');
-          card.style.transition = 'opacity 0.3s, transform 0.3s';
-          card.style.opacity = '0';
-          card.style.transform = 'scale(0.9)';
-          setTimeout(() => {
-            card.remove();
-            if (document.querySelectorAll('.listing-link').length === 0) {
-              window.location.reload();
-            }
-          }, 300);
+          if (card) {
+            card.style.transition = 'opacity 0.3s, transform 0.3s';
+            card.style.opacity = '0';
+            card.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+              card.remove();
+              if (document.querySelectorAll('.listing-link').length === 0) {
+                window.location.reload();
+              }
+            }, 300);
+          }
         }
       </script>
     <% } %>
